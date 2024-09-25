@@ -149,6 +149,31 @@ resource "aws_iam_role" "lambda_role_1" {
     ]
   })
 }
+# Create Role for Lambda to be able to create Logs
+resource "aws_iam_policy" "lambda_logging_policy" {
+  name        = "agrcic-lambda-logging-policy1--${var.part}"
+  description = "Policy for allowing Lambda to write logs to CloudWatch"
+  policy      = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+# Attach policy
+resource "aws_iam_role_policy_attachment" "lambda_logging_policy_policy_attachment" {
+  role       = aws_iam_role.lambda_role_1.name
+  policy_arn = aws_iam_policy.lambda_logging_policy.arn
+}
+
 resource "aws_lambda_function" "agrcic-lambda-1" {
   function_name = "agrcic-lambda-1-${var.part}"
   handler = "lambda_1.lambda_handler"
