@@ -83,6 +83,26 @@ resource "aws_iam_role" "lambda_exec_role" {
     ]
   })
 }
+resource "aws_iam_role_policy" "lambda_sqs_policy" {
+  name = "agrcic-lambda-sqs-policy"
+  role = aws_iam_role.lambda_exec_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "SQS:ReceiveMessage",
+          "SQS:DeleteMessage",
+          "SQS:GetQueueAttributes"
+        ],
+        Resource = aws_sqs_queue.event_queue.arn
+      }
+    ]
+  })
+}
+
 
 # StepFunction
 resource "aws_sfn_state_machine" "state_machine" {
@@ -145,13 +165,6 @@ resource "aws_iam_role" "step_function_role" {
   })
 }
 
-# Set SQS as trigger for StepFunction
-# resource "aws_lambda_event_source_mapping" "sqs_trigger" {
-#   event_source_arn = aws_sqs_queue.event_queue.arn
-#   function_arn     = aws_lambda_function.lambda_function_1.arn  # Placeholder, not directly triggering in this way.
-#   batch_size       = 10
-#   enabled          = true
-# }
 resource "aws_lambda_event_source_mapping" "sqs_trigger" {
   event_source_arn = aws_sqs_queue.event_queue.arn
   function_name    = aws_lambda_function.lambda_function_1.arn
