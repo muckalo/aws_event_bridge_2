@@ -15,15 +15,15 @@ resource "aws_sqs_queue" "sqs-queue-1" {
 resource "aws_cloudwatch_event_rule" "eb-rule-1" {
   name = "agrcic-eb-rule-1-${var.part}"
   event_pattern = jsonencode({
-    source = ["com.myapp.sqs"]
+    source = ["demo.sqs"]
     detail-type = ["agrcic-detail-type-1-${var.part}"]
   })
   depends_on = [aws_sqs_queue.sqs-queue-1]
 }
 # Create EventBridge Target
 resource "aws_cloudwatch_event_target" "eb-target-1" {
-  arn  = aws_sqs_queue.sqs-queue-1.arn
   rule = aws_cloudwatch_event_rule.eb-rule-1.name
+  arn  = aws_sqs_queue.sqs-queue-1.arn
   depends_on = [aws_cloudwatch_event_rule.eb-rule-1]
   target_id = "agrcic-target-1-${var.part}"
 }
