@@ -16,7 +16,7 @@ resource "aws_cloudwatch_event_rule" "eb-rule-1" {
   name = "agrcic-eb-rule-1-${var.part}"
   event_pattern = jsonencode({
     source = ["demo.sqs"]
-    detail-type = ["agrcic-detail-type-1-${var.part}"]
+#     detail-type = ["agrcic-detail-type-1-${var.part}"]
   })
   depends_on = [aws_sqs_queue.sqs-queue-1]
 }
