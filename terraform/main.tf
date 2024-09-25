@@ -73,6 +73,9 @@ resource "aws_cloudwatch_event_rule" "eb-rule-1" {
   name = "agrcic-eb-rule-1-${var.part}"
   event_pattern = jsonencode({
     source = ["demo.sqs"]
+    detail = {
+      choice = ["1", "2", "3"]  # Example choices to trigger
+    }
   })
   depends_on = [aws_sqs_queue.sqs-queue-1]
 }
@@ -82,14 +85,20 @@ resource "aws_cloudwatch_event_target" "eb-target-1" {
   target_id = "agrcic-target-1-${var.part}"
   arn  = aws_sqs_queue.sqs-queue-1.arn
   depends_on = [aws_cloudwatch_event_rule.eb-rule-1]
-#   role_arn = aws_iam_role.eventbridge_role.arn
+  input_transformer {
+      input_paths = {
+        choice = "$.detail.choice"  # Adjust this based on your event structure
+      }
+      input_template = jsonencode({
+        choice = "<choice>"
+      })
+    }
 }
 # Create EventBridge Target for CloudWatch
 resource "aws_cloudwatch_event_target" "eb-target-cw-1" {
   rule      = aws_cloudwatch_event_rule.eb-rule-1.name
   target_id = "agrcic-target-cw-1-${var.part}"
   arn = aws_cloudwatch_log_group.eb-rule-log-group-1.arn
-#   role_arn  = aws_iam_role.eventbridge_role.arn
 }
 
 # Grant EventBridge Permissions to Send Messages to SQS

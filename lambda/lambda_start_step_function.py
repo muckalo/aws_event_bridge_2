@@ -12,7 +12,8 @@ step_function_client = session.client(
 
 
 def lambda_handler(event, context):
-    # step_function_client = boto3.client('stepfunctions')
+    print("Lambda start step function received event:", json.dumps(event))
+
     step_function_arn = os.environ['STEP_FUNCTION_ARN']
 
     for record in event['Records']:
