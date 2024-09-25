@@ -189,6 +189,30 @@ resource "aws_lambda_function" "start_step_function" {
     }
   }
 }
+# Add permission for Lambda to read from SQS
+resource "aws_iam_role_policy" "lambda_sqs_policy" {
+  name   = "agrcic-lambda-sqs-policy-1-${var.part}"
+  role   = aws_iam_role.lambda_role_1.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = "sqs:ReceiveMessage",
+        Resource = aws_sqs_queue.sqs-queue-1.arn
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ],
+        Resource = aws_sqs_queue.sqs-queue-1.arn
+      }
+    ]
+  })
+}
 # Event Source Mapping for SQS to Trigger Lambda
 resource "aws_lambda_event_source_mapping" "sqs_to_lambda" {
   event_source_arn = aws_sqs_queue.sqs-queue-1.arn
