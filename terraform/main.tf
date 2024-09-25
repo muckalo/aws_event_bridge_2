@@ -52,7 +52,6 @@ resource "aws_iam_role_policy" "eventbridge_policy" {
 resource "aws_iam_role_policy" "eventbridge_policy_2" {
   name   = "agrcic-eventbridge-policy-2"
   role   = aws_iam_role.eventbridge_role.id
-
   policy = jsonencode({
     "Version": "2012-10-17",
     "Statement": [
@@ -117,6 +116,21 @@ resource "aws_sqs_queue_policy" "event_queue_policy" {
   })
 }
 
+# Policy for Sending Events to EventBridge
+resource "aws_iam_role_policy" "eventbridge_policy_3" {
+  name   = "agrcic-eventbridge-policy-3"
+  role   = aws_iam_role.eventbridge_role.id
+  policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "events:PutEvents",
+        "Resource": "arn:aws:events:${var.region}:${data.aws_caller_identity.current.account_id}:event-bus/default"
+      }
+    ]
+  })
+}
 
 
 
