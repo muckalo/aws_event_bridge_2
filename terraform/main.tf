@@ -183,8 +183,10 @@ resource "aws_lambda_function" "start_step_function" {
   source_code_hash = filebase64sha256("../lambda_functions.zip") # Adjust the path as necessary
   filename      = "../lambda_functions.zip" # Adjust the path as necessary
 
-  environment = {
-    STEP_FUNCTION_ARN = aws_sfn_state_machine.agrcic_state_machine_1.arn
+  environment {
+    variables = {
+      STEP_FUNCTION_ARN = aws_sfn_state_machine.agrcic_state_machine_1.arn
+    }
   }
 }
 # Event Source Mapping for SQS to Trigger Lambda
