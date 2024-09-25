@@ -28,7 +28,7 @@ resource "aws_iam_role" "eventbridge_role" {
     ]
   })
 }
-# Create Polivy for EventBridge
+# Create Policy for EventBridge to send messages to SQS
 resource "aws_iam_role_policy" "eventbridge_policy" {
   name   = "agrcic-eventbridge-policy-1-${var.part}"
   role   = aws_iam_role.eventbridge_role.id
@@ -44,7 +44,25 @@ resource "aws_iam_role_policy" "eventbridge_policy" {
     ]
   })
 }
+# Create Policy for EventBridge to send logs to CloudWatch
+resource "aws_iam_role_policy" "eventbridge_policy_2" {
+  name   = "agrcic-eventbridge-policy-2"
+  role   = aws_iam_role.eventbridge_role.id
 
+  policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Resource": "arn:aws:logs:*:*:log-group:/aws/events/*"
+      }
+    ]
+  })
+}
 
 # Create EventBridge Rule
 resource "aws_cloudwatch_event_rule" "eb-rule-1" {
@@ -54,14 +72,27 @@ resource "aws_cloudwatch_event_rule" "eb-rule-1" {
   })
   depends_on = [aws_sqs_queue.sqs-queue-1]
 }
-# Create EventBridge Target
+# Create EventBridge Target for SQS
 resource "aws_cloudwatch_event_target" "eb-target-1" {
   rule = aws_cloudwatch_event_rule.eb-rule-1.name
+  target_id = "agrcic-target-1-${var.part}"
   arn  = aws_sqs_queue.sqs-queue-1.arn
   depends_on = [aws_cloudwatch_event_rule.eb-rule-1]
-  target_id = "agrcic-target-1-${var.part}"
   role_arn = aws_iam_role.eventbridge_role.arn
 }
+# Create CloudWatch Group
+resource "aws_cloudwatch_log_group" "eb-rule-log-group-1" {
+  name = "/aws/events/agrcic-eb-rule-1-${var.part}"
+}
+
+# Create EventBridge Target for CloudWatch
+resource "aws_cloudwatch_event_target" "eb-target-cw-1" {
+  rule      = aws_cloudwatch_event_rule.eb-rule-1.name
+  target_id = "agrcic-target-cw-1-${var.part}"
+  arn = aws_cloudwatch_log_group.eb-rule-log-group-1.arn
+  role_arn  = aws_iam_role.eventbridge_role.arn
+}
+
 # Grant EventBridge Permissions to Send Messages to SQS
 resource "aws_sqs_queue_policy" "event_queue_policy" {
   queue_url = aws_sqs_queue.sqs-queue-1.id
