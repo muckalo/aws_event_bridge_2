@@ -1,0 +1,70 @@
+pipeline {
+    agent any
+    environment {
+        AWS_REGION = 'eu-west-1'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                dir('/var/lib/jenkins/workspace/shared-agrcic-resources-1') {
+                    git branch: 'main', credentialsId: 'github-creds', url: 'https://github.com/muckalo/aws_event_bridge_2.git'
+//                    git branch: 'main', url: 'https://github.com/muckalo/aws_event_bridge_2.git'
+                }
+            }
+        }
+
+        stage('Prepare Lambda Deployment Package') {
+            steps {
+                dir('/var/lib/jenkins/workspace/shared-agrcic-resources-1') {
+                    sh '''
+                    cd lambda
+                    zip -r ../lambda_functions.zip .
+                    cd ..
+                    '''
+                }
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    dir('/var/lib/jenkins/workspace/shared-agrcic-resources-1/terraform') {
+                        sh 'terraform init'
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    dir('/var/lib/jenkins/workspace/shared-agrcic-resources-1/terraform') {
+                        sh '''
+                        terraform plan \
+                        -var "aws_access_key=$AWS_ACCESS_KEY_ID" \
+                        -var "aws_secret_key=$AWS_SECRET_ACCESS_KEY" \
+                        -var "region=$AWS_REGION" \
+                        -out=tfplan
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    dir('/var/lib/jenkins/workspace/shared-agrcic-resources-1/terraform') {
+                        sh '''
+                        terraform apply -auto-approve \
+                        -var "aws_access_key=$AWS_ACCESS_KEY_ID" \
+                        -var "aws_secret_key=$AWS_SECRET_ACCESS_KEY" \
+                        -var "region=$AWS_REGION"
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
