@@ -18,8 +18,7 @@ def lambda_handler(event, context):
 
     for record in event['Records']:
         # Assuming the SQS message body is a JSON string
-        # message_body = json.loads(record['body'])
-        message_body = record['body']
+        message_body = json.loads(record['body'])
 
         # You can modify this payload as necessary for your Step Function
         payload = {
