@@ -102,6 +102,14 @@ resource "aws_iam_role_policy" "lambda_sqs_policy" {
     ]
   })
 }
+resource "aws_lambda_permission" "allow_eventbridge" {
+  statement_id  = "AllowExecutionFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda_function_1.function_name
+  principal     = "events.amazonaws.com"
+
+  source_arn    = aws_cloudwatch_event_rule.event_rule.arn
+}
 
 
 # StepFunction
@@ -170,5 +178,10 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
   function_name    = aws_lambda_function.lambda_function_1.arn
   batch_size = 10
   enabled = true
+}
+
+resource "aws_cloudwatch_event_target" "step_function_target" {
+  rule      = aws_cloudwatch_event_rule.event_rule.name
+  arn       = aws_sfn_state_machine.state_machine.arn
 }
 
