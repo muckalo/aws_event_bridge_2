@@ -174,6 +174,28 @@ resource "aws_iam_role_policy_attachment" "lambda_logging_policy_policy_attachme
   policy_arn = aws_iam_policy.lambda_logging_policy.arn
 }
 
+# Create Lambda Function to Start the Step Function
+resource "aws_lambda_function" "start_step_function" {
+  function_name = "agrcic-lambda-start-step-function-1-${var.part}"
+  handler       = "lambda_start_step_function.lambda_handler" # Adjust based on your handler
+  runtime       = "python3.9"
+  role          = aws_iam_role.lambda_role_1.arn
+  source_code_hash = filebase64sha256("../lambda_functions.zip") # Adjust the path as necessary
+  filename      = "../lambda_functions.zip" # Adjust the path as necessary
+
+  environment = {
+    STEP_FUNCTION_ARN = aws_sfn_state_machine.agrcic_state_machine_1.arn
+  }
+}
+# Event Source Mapping for SQS to Trigger Lambda
+resource "aws_lambda_event_source_mapping" "sqs_to_lambda" {
+  event_source_arn = aws_sqs_queue.sqs-queue-1.arn
+  function_name    = aws_lambda_function.start_step_function.arn
+  enabled          = true
+  batch_size       = 10
+}
+
+
 resource "aws_lambda_function" "agrcic-lambda-1" {
   function_name = "agrcic-lambda-1-${var.part}"
   handler = "lambda_1.lambda_handler"
