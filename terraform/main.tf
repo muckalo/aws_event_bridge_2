@@ -173,6 +173,44 @@ resource "aws_iam_role" "step_function_role" {
   })
 }
 
+resource "aws_iam_role" "eventbridge_step_function_role" {
+  name = "agrcic-eventbridge_step_function_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Principal = {
+          Service = "events.amazonaws.com"
+        },
+        Effect = "Allow",
+        Sid = ""
+      }
+    ]
+  })
+}
+resource "aws_iam_policy" "step_function_policy" {
+  name        = "agrcic-StepFunctionPolicy"
+  description = "Policy to allow EventBridge to invoke Step Functions"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "states:StartExecution",
+        Effect = "Allow",
+        Resource = aws_sfn_state_machine.state_machine.arn
+      }
+    ]
+  })
+}
+resource "aws_iam_role_policy_attachment" "attach_step_function_policy" {
+  policy_arn = aws_iam_policy.step_function_policy.arn
+  role       = aws_iam_role.eventbridge_step_function_role.name
+}
+
+
 resource "aws_lambda_event_source_mapping" "sqs_trigger" {
   event_source_arn = aws_sqs_queue.event_queue.arn
   function_name    = aws_lambda_function.lambda_function_1.arn
@@ -183,5 +221,6 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
 resource "aws_cloudwatch_event_target" "step_function_target" {
   rule      = aws_cloudwatch_event_rule.event_rule.name
   arn       = aws_sfn_state_machine.state_machine.arn
+  role_arn = aws_iam_role.eventbridge_step_function_role.arn
 }
 
