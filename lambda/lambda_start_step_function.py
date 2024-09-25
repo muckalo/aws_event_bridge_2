@@ -3,7 +3,7 @@ import boto3
 import os
 
 
-AWS_REGION = "us-east-1"
+AWS_REGION = "eu-west-1"
 session = boto3.session.Session()
 step_function_client = session.client(
     service_name='stepfunctions',
