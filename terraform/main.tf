@@ -213,6 +213,23 @@ resource "aws_iam_role_policy" "lambda_sqs_policy" {
     ]
   })
 }
+# Add permission for Lambda to start execution of State Machine
+resource "aws_iam_role_policy" "lambda_step_function_policy" {
+  name   = "agrcic-lambda-step-function-policy-1-${var.part}"
+  role   = aws_iam_role.lambda_role_1.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = "states:StartExecution",
+        Resource = aws_sfn_state_machine.agrcic_state_machine_1.arn
+      }
+    ]
+  })
+}
+
 # Event Source Mapping for SQS to Trigger Lambda
 resource "aws_lambda_event_source_mapping" "sqs_to_lambda" {
   event_source_arn = aws_sqs_queue.sqs-queue-1.arn
