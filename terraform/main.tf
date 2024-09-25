@@ -140,7 +140,6 @@ resource "aws_iam_role" "lambda_role_1" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid = "agrcic-lambda-policy-1-${var.part}"
         Effect = "Allow"
         Action = "sts:AssumeRole"
         Principal = {
