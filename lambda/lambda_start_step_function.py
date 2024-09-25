@@ -25,6 +25,7 @@ def lambda_handler(event, context):
             "choice": message_body.get('choice', '3'),  # Example key; modify as needed
             # Add more keys as necessary
         }
+        print("payload:", payload)
 
         response = step_function_client.start_execution(
             stateMachineArn=step_function_arn,
