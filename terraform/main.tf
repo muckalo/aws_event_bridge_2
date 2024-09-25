@@ -89,9 +89,14 @@ resource "aws_cloudwatch_event_target" "eb-target-1" {
       input_paths = {
         choice = "$.detail.choice"  # Adjust this based on your event structure
       }
-      input_template = jsonencode({
-        choice = "${choice}"
-      })
+#       input_template = jsonencode({
+#         choice = "<choice>"
+#       })
+    input_template = <<-EOF
+    {
+      "choice": "<choice>"
+    }
+    EOF
     }
 }
 # Create EventBridge Target for CloudWatch
