@@ -154,6 +154,6 @@ resource "aws_iam_role" "step_function_role" {
 # }
 resource "aws_lambda_event_source_mapping" "sqs_trigger" {
   event_source_arn = aws_sqs_queue.event_queue.arn
-  function_name    = aws_lambda_function.lambda_function_1.arn
+  function_name    = aws_lambda_function.lambda_function_1.function_name
 }
 
