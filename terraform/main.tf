@@ -5,16 +5,17 @@ provider "aws" {
 }
 
 # SQS
+# Create SQS Queue
 resource "aws_sqs_queue" "sqs-queue-1" {
   name = "agrcic-sqs-queue-1-${var.part}"
 }
 
-# Create CloudWatch Group
+
+# EVENT BRIDGE
+# Create CloudWatch Log Group For EventBridge
 resource "aws_cloudwatch_log_group" "eb-rule-log-group-1" {
   name = "/aws/events/agrcic-eb-rule-1-${var.part}"
 }
-
-# EVENT BRIDGE
 # Create Role for EventBridge
 resource "aws_iam_role" "eventbridge_role" {
   name = "agrcic-eventbridge-role-1-${var.part}"
@@ -115,8 +116,7 @@ resource "aws_sqs_queue_policy" "event_queue_policy" {
     ]
   })
 }
-
-# Policy for Sending Events to EventBridge
+# Create Policy for Sending Events to EventBridge
 resource "aws_iam_role_policy" "eventbridge_policy_3" {
   name   = "agrcic-eventbridge-policy-3"
   role   = aws_iam_role.eventbridge_role.id
@@ -133,37 +133,129 @@ resource "aws_iam_role_policy" "eventbridge_policy_3" {
 }
 
 
-
 # Lambda
-# resource "aws_iam_role" "lambda_role-1" {
-#   name = "agrcic-lambda-role-1-${var.part}"
-#   assume_role_policy = jsonencode({
-#     Version = "2012-10-17"
-#     Statement = [
-#       {
-#         Sid = "agrcic-lambda-policy-1-${var.part}"
-#         Effect = "Allow"
-#         Action = "sts:AssumeRole"
-#         Principal = {
-#           Service = "lambda.amazonaws.com"
-#         }
-#       }
-#     ]
-#   })
-# }
-# resource "aws_lambda_function" "agrcic-lambda-1" {
-#   function_name = "agrcic-lambda-1-${var.part}"
-#   handler = "lambda_1.lambda_handler"
-#   runtime = "python3.9"
-#   role = aws_iam_role.lambda_role-1.arn
-#   source_code_hash = filebase64sha256("../lambda_functions.zip")
-#   filename = "../lambda_functions.zip"
-# }
-# resource "aws_lambda_function" "agrcic-lambda-2" {
-#   function_name = "agrcic-lambda-2-${var.part}"
-#   handler = "lambda_2.lambda_handler"
-#   runtime = "python3.9"
-#   role = aws_iam_role.lambda_role-1.arn
-#   source_code_hash = filebase64sha256("../lambda_functions.zip")
-#   filename = "../lambda_functions.zip"
-# }
+resource "aws_iam_role" "lambda_role-1" {
+  name = "agrcic-lambda-role-1-${var.part}"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid = "agrcic-lambda-policy-1-${var.part}"
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+resource "aws_lambda_function" "agrcic-lambda-1" {
+  function_name = "agrcic-lambda-1-${var.part}"
+  handler = "lambda_1.lambda_handler"
+  runtime = "python3.9"
+  role = aws_iam_role.lambda_role-1.arn
+  source_code_hash = filebase64sha256("../lambda_functions.zip")
+  filename = "../lambda_functions.zip"
+}
+resource "aws_lambda_function" "agrcic-lambda-2" {
+  function_name = "agrcic-lambda-2-${var.part}"
+  handler = "lambda_2.lambda_handler"
+  runtime = "python3.9"
+  role = aws_iam_role.lambda_role-1.arn
+  source_code_hash = filebase64sha256("../lambda_functions.zip")
+  filename = "../lambda_functions.zip"
+}
+resource "aws_lambda_function" "agrcic-lambda-3" {
+  function_name = "agrcic-lambda-3-${var.part}"
+  handler = "lambda_3.lambda_handler"
+  runtime = "python3.9"
+  role = aws_iam_role.lambda_role-1.arn
+  source_code_hash = filebase64sha256("../lambda_functions.zip")
+  filename = "../lambda_functions.zip"
+}
+
+
+# STEP FUNCTION
+# Create Role for Step Function
+resource "aws_iam_role" "step_function_role" {
+  name = "agrcic-step-function-role-1-${var.part}"
+
+  assume_role_policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "states.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  })
+}
+# Attach policy to allow Step Function to invoke Lambda functions
+resource "aws_iam_role_policy" "step_function_policy_1" {
+  name = "agrcic-step-function-policy-1-${var.part}"
+  role = aws_iam_role.step_function_role.id
+
+  policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "lambda:InvokeFunction"
+        ],
+        "Resource": [
+          aws_lambda_function.agrcic-lambda-1.arn,
+          aws_lambda_function.agrcic-lambda-2.arn,
+          aws_lambda_function.agrcic-lambda-3.arn
+        ]
+      }
+    ]
+  })
+}
+# Create Step Function State Machine
+resource "aws_sfn_state_machine" "agrcic_state_machine_1" {
+  name     = "agrcic-state-machine-1-${var.part}"
+  role_arn = aws_iam_role.step_function_role.arn
+
+  definition = jsonencode({
+    "Comment": "A simple AWS Step Function example with choices",
+    "StartAt": "ChoiceState",
+    "States": {
+      "ChoiceState": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.choice",
+            "StringEquals": "1",
+            "Next": "InvokeLambda1"
+          },
+          {
+            "Variable": "$.choice",
+            "StringEquals": "2",
+            "Next": "InvokeLambda2"
+          }
+        ],
+        "Default": "InvokeLambda3"
+      },
+      "InvokeLambda1": {
+        "Type": "Task",
+        "Resource": aws_lambda_function.agrcic-lambda-1.arn,
+        "End": true
+      },
+      "InvokeLambda2": {
+        "Type": "Task",
+        "Resource": aws_lambda_function.agrcic-lambda-2.arn,
+        "End": true
+      },
+      "InvokeLambda3": {
+        "Type": "Task",
+        "Resource": aws_lambda_function.agrcic-lambda-3.arn,
+        "End": true
+      }
+    }
+  })
+}
