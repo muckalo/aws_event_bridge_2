@@ -74,7 +74,7 @@ resource "aws_cloudwatch_event_rule" "eb-rule-1" {
   event_pattern = jsonencode({
     source = ["demo.sqs"]
     detail = {
-      choice = ["1", "2", "3"]  # Example choices to trigger
+      choice = ["1", "2", "3", "a"]  # Example choices to trigger
     }
   })
   depends_on = [aws_sqs_queue.sqs-queue-1]
