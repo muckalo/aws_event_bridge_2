@@ -9,20 +9,51 @@ resource "aws_sqs_queue" "sqs-queue-1" {
   name = "agrcic-sqs-queue-1"
 }
 
-# EventBridge
+
+# EVENT BRIDGE
+# Create EventBridge Rule
 resource "aws_cloudwatch_event_rule" "eb-rule-1" {
   name = "agrcic-eb-rule-1"
   event_pattern = jsonencode({
     source = ["com.myapp.sqs"]
+    detail-type = ["agrcic-detail-type-1"]
   })
   depends_on = [aws_sqs_queue.sqs-queue-1]
 }
+# Create EventBridge Target
 resource "aws_cloudwatch_event_target" "eb-target-1" {
-  event_bus_name = "agrcic-event-bus-1"
   arn  = aws_sqs_queue.sqs-queue-1.arn
   rule = aws_cloudwatch_event_rule.eb-rule-1.name
   depends_on = [aws_cloudwatch_event_rule.eb-rule-1]
+  target_id = "agrcic-target-1"
 }
+# Grant EventBridge Permissions to Send Messages to SQS
+resource "aws_sqs_queue_policy" "event_queue_policy" {
+  queue_url = aws_sqs_queue.sqs-queue-1.id
+  depends_on = [aws_cloudwatch_event_target.eb-target-1]
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid = "agrcic-EventBridgeSendMessage",
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+        Action = "SQS:SendMessage"
+        Resource = aws_sqs_queue.sqs-queue-1.arn
+        Condition = {
+          "ArnEquals" = {
+            "aws:SourceArn" = aws_cloudwatch_event_rule.eb-rule-1.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+
+
 
 # Lambda
 # resource "aws_iam_role" "lambda_role-1" {
