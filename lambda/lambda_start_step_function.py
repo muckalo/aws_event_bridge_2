@@ -1,6 +1,10 @@
+"""
+Lambda start StepFunction
+"""
+
+import os
 import json
 import boto3
-import os
 
 
 AWS_REGION = "eu-west-1"
@@ -12,6 +16,14 @@ step_function_client = session.client(
 
 
 def lambda_handler(event, context):
+    """
+    Lambda Handler - Test start StepFunction
+
+    :param event:
+    :param context:
+    :return:
+    """
+
     print("Lambda start step function received event:", json.dumps(event))
 
     step_function_arn = os.environ['STEP_FUNCTION_ARN']

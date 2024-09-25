@@ -1,5 +1,6 @@
 pipeline {
     agent any
+    description 'This pipeline deploys AWS resources using Terraform and prepares Lambda deployment packages.'
     environment {
         AWS_REGION = 'eu-west-1'
     }
