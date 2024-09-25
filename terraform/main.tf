@@ -6,17 +6,17 @@ provider "aws" {
 
 # SQS
 resource "aws_sqs_queue" "sqs-queue-1" {
-  name = "agrcic-sqs-queue-1"
+  name = "agrcic-sqs-queue-${var.part}"
 }
 
 
 # EVENT BRIDGE
 # Create EventBridge Rule
 resource "aws_cloudwatch_event_rule" "eb-rule-1" {
-  name = "agrcic-eb-rule-1"
+  name = "agrcic-eb-rule-${var.part}"
   event_pattern = jsonencode({
     source = ["com.myapp.sqs"]
-    detail-type = ["agrcic-detail-type-1"]
+    detail-type = ["agrcic-detail-type-${var.part}"]
   })
   depends_on = [aws_sqs_queue.sqs-queue-1]
 }
@@ -25,7 +25,7 @@ resource "aws_cloudwatch_event_target" "eb-target-1" {
   arn  = aws_sqs_queue.sqs-queue-1.arn
   rule = aws_cloudwatch_event_rule.eb-rule-1.name
   depends_on = [aws_cloudwatch_event_rule.eb-rule-1]
-  target_id = "agrcic-target-1"
+  target_id = "agrcic-target-${var.part}"
 }
 # Grant EventBridge Permissions to Send Messages to SQS
 resource "aws_sqs_queue_policy" "event_queue_policy" {
@@ -35,7 +35,7 @@ resource "aws_sqs_queue_policy" "event_queue_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid = "agrcic-EventBridgeSendMessage",
+        Sid = "agrcic-EventBridgeSendMessage-${var.part}",
         Effect = "Allow"
         Principal = {
           Service = "events.amazonaws.com"
@@ -57,12 +57,12 @@ resource "aws_sqs_queue_policy" "event_queue_policy" {
 
 # Lambda
 # resource "aws_iam_role" "lambda_role-1" {
-#   name = "agrcic-lambda-role-1"
+#   name = "agrcic-lambda-role-${var.part}"
 #   assume_role_policy = jsonencode({
 #     Version = "2012-10-17"
 #     Statement = [
 #       {
-#         Sid = "agrcic-lambda-policy-1"
+#         Sid = "agrcic-lambda-policy-${var.part}"
 #         Effect = "Allow"
 #         Action = "sts:AssumeRole"
 #         Principal = {

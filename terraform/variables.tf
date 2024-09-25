@@ -14,3 +14,9 @@ variable "region" {
   description = "The AWS region to deploy to"
   type        = string
 }
+
+variable "part" {
+  description = "A part identifier for naming resources"
+  type        = string
+  default     = "1"  # You can change this default or set it at runtime
+}
