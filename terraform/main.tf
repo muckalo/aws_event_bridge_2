@@ -90,7 +90,7 @@ resource "aws_cloudwatch_event_target" "eb-target-1" {
         choice = "$.detail.choice"  # Adjust this based on your event structure
       }
       input_template = jsonencode({
-        choice = choice
+        choice = "${choice}"
       })
     }
 }
