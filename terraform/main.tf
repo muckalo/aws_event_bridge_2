@@ -19,6 +19,7 @@ provider "aws" {
 resource "aws_sqs_queue" "dlq" {
   name = "agrcic-sqs-dlq1-1-${var.part}"
   visibility_timeout_seconds = 30
+  message_retention_seconds   = 86400  # Retain messages for 1 day (86400 seconds)
 }
 # Create SQS Queue
 resource "aws_sqs_queue" "sqs-queue-1" {
@@ -26,6 +27,30 @@ resource "aws_sqs_queue" "sqs-queue-1" {
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dlq.arn
     maxReceiveCount = 1  # Number of times to try before sending to DLQ
+  })
+}
+
+# Create IAM policy for SQS permissions
+resource "aws_iam_policy" "sqs_access_policy" {
+  name        = "agrcic-sqs-access-policy-1-${var.part}"
+  description = "Policy for accessing SQS and DLQ"
+  policy      = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ],
+        Resource = [
+          aws_sqs_queue.sqs-queue-1.arn,
+          aws_sqs_queue.dlq.arn
+        ]
+      }
+    ]
   })
 }
 
@@ -200,6 +225,11 @@ resource "aws_iam_role_policy_attachment" "lambda_logging_policy_policy_attachme
   role       = aws_iam_role.lambda_role_1.name
   policy_arn = aws_iam_policy.lambda_logging_policy.arn
 }
+# Attach the SQS access policy to the Lambda role
+resource "aws_iam_role_policy_attachment" "lambda_sqs_access_policy_attachment" {
+  role       = aws_iam_role.lambda_role_1.name
+  policy_arn = aws_iam_policy.sqs_access_policy.arn
+}
 
 # Create Lambda Function to Start the Step Function
 resource "aws_lambda_function" "start_step_function" {
@@ -213,6 +243,7 @@ resource "aws_lambda_function" "start_step_function" {
   environment {
     variables = {
       STEP_FUNCTION_ARN = aws_sfn_state_machine.agrcic_state_machine_1.arn
+      DLQ_URL = aws_sqs_queue.dlq.id
     }
   }
 }
