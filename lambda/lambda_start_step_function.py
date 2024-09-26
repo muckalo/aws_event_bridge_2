@@ -32,10 +32,18 @@ def lambda_handler(event, context):
         # Assuming the SQS message body is a JSON string
         message_body = json.loads(record['body'])
 
+        # Extract choice from the message body
+        choice = message_body.get('choice', None)
+
+        # Check if choice is a string
+        if not isinstance(choice, str):
+            err_msg = "Invalid choice: %s. Must be a string.", choice
+            print(err_msg)
+            raise ValueError(err_msg)
+
         # You can modify this payload as necessary for your Step Function
         payload = {
-            "choice": message_body.get('choice', '3'),  # Example key; modify as needed
-            # Add more keys as necessary
+            "choice": choice,
         }
         print("payload:", payload)
 

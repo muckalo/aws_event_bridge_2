@@ -15,9 +15,18 @@ provider "aws" {
 }
 
 # SQS
+# Create Dead Letter Queue
+resource "aws_sqs_queue" "dlq" {
+  name = "agrcic-sqs-dlq1-1-${var.part}"
+  visibility_timeout_seconds = 30
+}
 # Create SQS Queue
 resource "aws_sqs_queue" "sqs-queue-1" {
   name = "agrcic-sqs-queue-1-${var.part}"
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.dlq.arn
+    maxReceiveCount = 1  # Number of times to try before sending to DLQ
+  })
 }
 
 
